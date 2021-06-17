@@ -150,7 +150,7 @@ def load_data(name, random_state):
 
     # load Restaurant Data
     elif name == "Restaurant":
-        reader = Reader(rating_scale=(0,2))
+        reader = Reader(rating_scale=(1,3))
         dataframe = pd.read_csv("rest_data.csv")
         dataframe.rename(columns={
             "userID": "user",

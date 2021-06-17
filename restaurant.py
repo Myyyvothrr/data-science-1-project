@@ -8,6 +8,7 @@ rating = pd.read_csv("rating_final.csv")
 restaurant = pd.read_csv("geoplaces2.csv")
 restaurant = restaurant[["placeID", "name"]]
 rating.drop(['food_rating', 'service_rating'], axis=1, inplace= True)
+rating['rating'] = rating['rating'].map({2:3, 1:2, 0:1})
 
 rating_restaurant = pd.merge(rating, restaurant, on="placeID")
 
