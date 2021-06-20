@@ -14,12 +14,10 @@ import streamlit as st
 # https://stackoverflow.com/questions/60172282/how-to-run-debug-a-streamlit-application-from-an-ide
 
 
-def get_top_n(predictions, n, k):
+def get_top_n(predictions, n):
     top_n = defaultdict(list)
     for uid, iid, true_r, est, _ in predictions:
-        # filter by threshold
-        if est >= k:
-            top_n[uid].append((iid, est))
+        top_n[uid].append((iid, est))
 
     for uid, user_ratings in top_n.items():
         user_ratings.sort(key=lambda x: x[1], reverse=True)
@@ -31,19 +29,26 @@ def get_top_n(predictions, n, k):
     return top_n
 
 
-def filter_predictions_to_top_n_and_threshold_k(predictions, n, k):
+def filter_predictions_to_top_n_and_threshold_k(predictions, n):
     filtered_predictions = []
 
+    top_n = defaultdict(list)
     for pred in predictions:
         uid, iid, true_r, est, _ = pred
-        if est >= k:
-            filtered_predictions.append(pred)
+        top_n[uid].append((iid, est, pred))
 
-            if n > 0 and len(filtered_predictions) >= n:
-                break
+    for uid, user_ratings in top_n.items():
+        user_ratings.sort(key=lambda x: x[1], reverse=True)
+        if n > 0:
+            top_n[uid] = user_ratings[:n]
+        else:
+            top_n[uid] = user_ratings
+
+    for uid in top_n:
+        for prediction in top_n[uid]:
+            filtered_predictions.append(prediction[2])
 
     return filtered_predictions
-
 
 
 def get_testset_items_per_user(testset):
@@ -255,7 +260,6 @@ option_random_state = st.sidebar.number_input("Random state", min_value=0)
 
 # evaluation settings
 option_n = st.sidebar.number_input("Top N recommendations", min_value=0, value=5)
-option_k = st.sidebar.number_input("Recommendation prediction threshold", min_value=0.0, max_value=1.0, value=0.5)
 
 # algo selection, can select multiple
 option_algos = st.sidebar.multiselect("Algorithms", ["SVD", "KNNBasic", "KNNWithZScore"])
@@ -342,10 +346,10 @@ for algo in algos:
 
     # get item predictions
     predictions = algos[algo].test(data["testset"])
-    filtered_predictions = filter_predictions_to_top_n_and_threshold_k(predictions, option_n, option_k)
+    filtered_predictions = filter_predictions_to_top_n_and_threshold_k(predictions, option_n)
 
     # get top n predictions
-    top_n = get_top_n(predictions, n=option_n, k=option_k)
+    top_n = get_top_n(predictions, n=option_n)
 
     # calculate metrics
     metrics[algo] = {
